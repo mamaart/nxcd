@@ -34,7 +34,7 @@ type Config struct {
 func Client(privateKeyPath ...string) (*ssh.Client, error) {
 	auths, err := loadSSHAuthMethods(privateKeyPath...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load ssh auth methods")
+		return nil, fmt.Errorf("failed to load ssh auth methods: %v", err)
 	}
 
 	client, err := ssh.Dial("tcp", "github.com:22", &ssh.ClientConfig{
@@ -52,11 +52,13 @@ func loadSSHAuthMethods(privateKeyPath ...string) (auths []ssh.AuthMethod, _ err
 	for _, keyPath := range privateKeyPath {
 		keyData, err := os.ReadFile(keyPath)
 		if err != nil {
+			log.Printf("WARNING: failed to read private key file: %v", err)
 			continue
 		}
 
 		signer, err := ssh.ParsePrivateKey(keyData)
 		if err != nil {
+			log.Printf("WARNING: failed to parse private key file: %v", err)
 			continue
 		}
 
