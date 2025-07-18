@@ -105,7 +105,7 @@
             Type = "simple";
             DynamicUser = "yes";
             LoadCredential = [
-              "ssh_key:${toString config.services.nxcd.private-key-path}"
+              "ssh_key:/etc/ssh/ssh_host_ed25519_key"
             ] ++ lib.optional (config.services.nxcd.configFile != null) "config:${toString config.services.nxcd.configFile}";
             Environment = 
               if (config.services.nxcd.configFile != null) then 
