@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,7 +15,6 @@ import (
 	"time"
 
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/agent"
 )
 
 const (
@@ -53,14 +51,6 @@ func Client(privateKeyPath ...string) (*ssh.Client, error) {
 
 func loadSSHAuthMethods(privateKeyPath ...string) ([]ssh.AuthMethod, error) {
 	var auths []ssh.AuthMethod
-
-	if sock := os.Getenv("SSH_AUTH_SOCK"); sock != "" {
-		conn, err := net.Dial("unix", sock)
-		if err == nil {
-			agentClient := agent.NewClient(conn)
-			auths = append(auths, ssh.PublicKeysCallback(agentClient.Signers))
-		}
-	}
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
