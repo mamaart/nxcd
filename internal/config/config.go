@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -28,50 +29,77 @@ type Git struct {
 	PrivateKeyPath string `yaml:"private_key_path"`
 }
 
-func (c Config) Valid() error {
+func Load() (Config, error) {
+	configPath := os.Getenv("APP_CONFIG")
+	if configPath != "" {
+		config, err := fromFile(configPath)
+		if err != nil {
+			return Config{}, fmt.Errorf("Failed to load configuration: %v", err)
+		}
+		return config.valid()
+	}
+	config := Config{
+		Matrix: Matrix{
+			Enabled:    os.Getenv("MATRIX_ENABLED") == "true",
+			HomeServer: os.Getenv("MATRIX_HOMESERVER"),
+			Username:   os.Getenv("MATRIX_USERNAME"),
+			Password:   os.Getenv("MATRIX_PASSWORD"),
+			RoomID:     os.Getenv("MATRIX_ROOMID"),
+		},
+		NixHost: os.Getenv("NIX_HOST"),
+		Git: Git{
+			Repo:           os.Getenv("GIT_REPO"),
+			PrivateKeyPath: os.Getenv("GIT_SSH_PRIVATE_KEY_PATH"),
+			Branch:         os.Getenv("GIT_BRANCH"),
+		},
+	}
+	return config.valid()
+}
+
+func (c Config) valid() (Config, error) {
 	if c.Matrix.Enabled {
 		if c.Matrix.HomeServer == "" {
-			return errors.New("missing matrix homeserver address")
+			return c, errors.New("missing matrix homeserver address")
 		}
 		if c.Matrix.Username == "" {
-			return errors.New("missing matrix user id")
+			return c, errors.New("missing matrix user id")
 		}
 		if c.Matrix.Password == "" {
-			return errors.New("missing matrix token")
+			return c, errors.New("missing matrix token")
 		}
 		if c.Matrix.RoomID == "" {
-			return errors.New("missing matrix room id")
+			return c, errors.New("missing matrix room id")
 		}
+	}
+	if c.Git.Repo == "" {
+		return c, errors.New("missing github repo in the format username/repo")
+	}
+	if c.NixHost == "" {
+		return c, errors.New("missing nix machine hostname")
+	}
+	if c.PollDuration == "" {
+		c.PollDuration = "60"
 	}
 	if c.Git.Branch == "" {
 		c.Git.Branch = "main"
 	}
 	if c.Git.PrivateKeyPath == "" {
-		return errors.New("missing private_key_path")
+		c.Git.PrivateKeyPath = "/etc/ssh/ssh_host_ed25519_key"
 	}
-	if c.Git.Repo == "" {
-		return errors.New("missing github repo in the format username/repo")
-	}
-	if c.NixHost == "" {
-		return errors.New("missing nix machine hostname")
-	}
-	if c.PollDuration == "" {
-		c.PollDuration = "60"
-	}
-	return nil
+	return c, nil
 }
 
-func FromFile(path string) (*Config, error) {
+func fromFile(path string) (Config, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return Config{}, err
 	}
 	defer f.Close()
 
 	var cfg Config
 	decoder := yaml.NewDecoder(f)
 	if err := decoder.Decode(&cfg); err != nil {
-		return nil, err
+		return Config{}, err
 	}
-	return &cfg, nil
+	return cfg, nil
 }
