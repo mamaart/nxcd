@@ -104,13 +104,15 @@
             Restart = "always";
             Type = "simple";
             DynamicUser = "yes";
-            LoadCredential = lib.optional (config.services.nxcd.configFile != null) "config:${toString config.services.nxcd.configFile}";
+            LoadCredentials = [
+              "ssh_key:${toString config.services.nxcd.private-key-path}"
+            ] ++ lib.optional (config.services.nxcd.configFile != null) "config:${toString config.services.nxcd.configFile}";
             Environment = 
               if (config.services.nxcd.configFile != null) then 
                 [ "APP_CONFIG=/run/credentials/%N.service/config" ]
               else
               [
-                "SSH_PRIVATE_KEY_PATH=${toString config.services.nxcd.private-key-path}"
+                "SSH_PRIVATE_KEY_PATH=/run/credentials/%N.service/ssh_key"
                 "REPO=${toString config.services.nxcd.repo}"
                 "BRANCH=${toString config.services.nxcd.branch}"
                 "HOST=${toString config.services.nxcd.host}"
