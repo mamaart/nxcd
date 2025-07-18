@@ -104,23 +104,23 @@
             Restart = "always";
             Type = "simple";
             DynamicUser = "yes";
-            LoadCredentials = lib.optional (config.services.nxcd.configFile != null)
-              ("config:" + toString config.services.nxcd.configFile);
-          };
-          environment = lib.mkIf (config.services.nxcd.configFile != null) {
-            APP_CONFIG = "/run/credentials/nxcd.service/config";
-          } // lib.mkIf (config.services.nxcd.configFile == null) {
-            SSH_PRIVATE_KEY_PATH = toString config.services.nxcd.private-key-path;
-            REPO = toString config.services.nxcd.repo;
-            BRANCH = toString config.services.nxcd.branch;
-            HOST = toString config.services.nxcd.host;
-            POLL_DURATION = toString config.services.nxcd.poll_duration;
-          } // lib.mkIf (config.services.nxcd.matrix.enable && config.services.nxcd.configFile == null) {
-            MATRIX_ENABLED = "true";
-            MATRIX_HOMESERVER = toString config.services.nxcd.matrix.homeserver;
-            MATRIX_USERNAME = toString config.services.nxcd.matrix.username;
-            MATRIX_PASSWORD = toString config.services.nxcd.matrix.password;
-            MATRIX_ROOMID = toString config.services.nxcd.matrix.roomId;
+            LoadCredential = lib.optional (config.services.nxcd.configFile != null) "config:${toString config.services.nxcd.configFile}";
+            Environment = 
+              if (config.services.nxcd.configFile != null) then 
+                [ "APP_CONFIG=/run/credentials/%N.service/config" ]
+              else
+              [
+                "SSH_PRIVATE_KEY_PATH=${toString config.services.nxcd.private-key-path}"
+                "REPO=${toString config.services.nxcd.repo}"
+                "BRANCH=${toString config.services.nxcd.branch}"
+                "HOST=${toString config.services.nxcd.host}"
+                "POLL_DURATION=${toString config.services.nxcd.poll_duration}"
+                "MATRIX_ENABLED=${toString config.services.nxcd.matrix.enable}"
+                "MATRIX_HOMESERVER=${toString config.services.nxcd.matrix.homeserver}"
+                "MATRIX_USERNAME=${toString config.services.nxcd.matrix.username}"
+                "MATRIX_PASSWORD=${toString config.services.nxcd.matrix.password}"
+                "MATRIX_ROOMID=${toString config.services.nxcd.matrix.roomId}"
+              ];
           };
         };
       };
