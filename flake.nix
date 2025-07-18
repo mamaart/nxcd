@@ -115,8 +115,8 @@
               lib.optional (config.services.nxcd.private-key-raw != null) "ssh_key:${toString config.services.nxcd.private-key-raw}"
               ++ 
               lib.optional (config.services.nxcd.configFile != null) "config:${toString config.services.nxcd.configFile}";
-            Environment = 
-              if (config.services.nxcd.configFile != null) then 
+            Environment = [ "NIXOS_REBUILD=${pkgs.nixos-rebuild}/bin/nixos-rebuild" ] ++
+              (if (config.services.nxcd.configFile != null) then 
                 [ "APP_CONFIG=/run/credentials/%N.service/config" ]
               else
               [
@@ -130,7 +130,7 @@
                 "MATRIX_USERNAME=${toString config.services.nxcd.matrix.username}"
                 "MATRIX_PASSWORD=${toString config.services.nxcd.matrix.password}"
                 "MATRIX_ROOMID=${toString config.services.nxcd.matrix.roomId}"
-              ];
+              ]);
           };
         };
       };

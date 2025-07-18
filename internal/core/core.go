@@ -126,7 +126,7 @@ func Run(cfg Config) error {
 
 func runCommand(repo, hash, host, branch string) {
 	cmd := exec.Command(
-		"nixos-rebuild", "switch", "--flake",
+		os.Getenv("NIXOS_REBUILD"), "switch", "--flake",
 		fmt.Sprintf(
 			"git+ssh://git@github.com/%s?ref=%s&rev=%s#%s",
 			repo, branch, hash, host,
