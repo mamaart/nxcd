@@ -12,7 +12,7 @@
       pname = "nxcd";
       version = "0.0.1";
       src = ./.;
-      vendorHash = "sha256-MnvT88VPs7vUlUtK4Qrkci1UsPyo8uqBgbxTMFqDzok=";
+      vendorHash = "sha256-OR5+te37m1/y4Q2ot169WubRJdW6b0SkMxwmQ93eeDE=";
     };
 
     apps.default = {
@@ -23,6 +23,11 @@
     nixosModules.default = {config, lib, pkgs, ...}: {
       options.services.nxcd = {
         enable = lib.mkEnableOption "Enable nxcd dns control service";
+
+        configFile = lib.mkOption {
+          type = lib.types.path;
+          description = "the path of the config (yaml) file";
+        };
 
         private-key-path = lib.mkOption {
           type = lib.types.path;
@@ -99,19 +104,21 @@
             Restart = "always";
             Type = "simple";
             DynamicUser = "yes";
-            Environment = [
-              "SSH_PRIVATE_KEY_PATH=${toString config.services.nxcd.private-key-path}"
-              "REPO=${toString config.services.nxcd.repo}"
-              "BRANCH=${toString config.services.nxcd.branch}"
-              "HOST=${toString config.services.nxcd.host}"
-              "POLL_DURATION=${toString config.services.nxcd.poll_duration}"
-            ] ++ lib.mkIf config.services.nxcd.matrix.enable [
-              "MATRIX_ENABLED=true"
-              "MATRIX_HOMESERVER=${toString config.services.nxcd.matrix.homeserver}"
-              "MATRIX_USERNAME=${toString config.services.nxcd.matrix.username}"
-              "MATRIX_PASSWORD=${toString config.services.nxcd.matrix.password}"
-              "MATRIX_ROOMID=${toString config.services.nxcd.matrix.roomId}"
-            ];
+          };
+          environment = lib.mkIf (config.services.serverinfo.configFile != null) {
+            APP_CONFIG = toString config.services.serverinfo.configFile;
+          } // lib.mkIf (config.services.serverinfo.configFile == null) {
+            SSH_PRIVATE_KEY_PATH = toString config.services.nxcd.private-key-path;
+            REPO = toString config.services.nxcd.repo;
+            BRANCH = toString config.services.nxcd.branch;
+            HOST = toString config.services.nxcd.host;
+            POLL_DURATION = toString config.services.nxcd.poll_duration;
+          } // lib.mkIf (config.services.nxcd.matrix.enable && config.services.serverinfo.configFile == null) {
+            MATRIX_ENABLED = "true";
+            MATRIX_HOMESERVER = toString config.services.nxcd.matrix.homeserver;
+            MATRIX_USERNAME = toString config.services.nxcd.matrix.username;
+            MATRIX_PASSWORD = toString config.services.nxcd.matrix.password;
+            MATRIX_ROOMID = toString config.services.nxcd.matrix.roomId;
           };
         };
       };
