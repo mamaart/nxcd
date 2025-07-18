@@ -104,9 +104,11 @@
             Restart = "always";
             Type = "simple";
             DynamicUser = "yes";
+            LoadCredentials = lib.optional (config.services.nxcd.configFile != null)
+              ("config:" + toString config.services.nxcd.configFile);
           };
           environment = lib.mkIf (config.services.nxcd.configFile != null) {
-            APP_CONFIG = toString config.services.nxcd.configFile;
+            APP_CONFIG = "/run/credentials/nxcd.service/config";
           } // lib.mkIf (config.services.nxcd.configFile == null) {
             SSH_PRIVATE_KEY_PATH = toString config.services.nxcd.private-key-path;
             REPO = toString config.services.nxcd.repo;
