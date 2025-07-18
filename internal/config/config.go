@@ -31,6 +31,9 @@ type Git struct {
 
 func Load() (Config, error) {
 	configPath := os.Getenv("APP_CONFIG")
+	if configPath == "" {
+		return Config{}, fmt.Errorf("missing APP_CONFIG environment variable")
+	}
 	if configPath != "" {
 		config, err := fromFile(configPath)
 		if err != nil {

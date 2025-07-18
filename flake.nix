@@ -105,15 +105,15 @@
             Type = "simple";
             DynamicUser = "yes";
           };
-          environment = lib.mkIf (config.services.serverinfo.configFile != null) {
-            APP_CONFIG = toString config.services.serverinfo.configFile;
-          } // lib.mkIf (config.services.serverinfo.configFile == null) {
+          environment = lib.mkIf (config.services.nxcd.configFile != null) {
+            APP_CONFIG = toString config.services.nxcd.configFile;
+          } // lib.mkIf (config.services.nxcd.configFile == null) {
             SSH_PRIVATE_KEY_PATH = toString config.services.nxcd.private-key-path;
             REPO = toString config.services.nxcd.repo;
             BRANCH = toString config.services.nxcd.branch;
             HOST = toString config.services.nxcd.host;
             POLL_DURATION = toString config.services.nxcd.poll_duration;
-          } // lib.mkIf (config.services.nxcd.matrix.enable && config.services.serverinfo.configFile == null) {
+          } // lib.mkIf (config.services.nxcd.matrix.enable && config.services.nxcd.configFile == null) {
             MATRIX_ENABLED = "true";
             MATRIX_HOMESERVER = toString config.services.nxcd.matrix.homeserver;
             MATRIX_USERNAME = toString config.services.nxcd.matrix.username;
