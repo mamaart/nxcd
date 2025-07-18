@@ -112,9 +112,9 @@
                 [ "APP_CONFIG=/run/credentials/%N.service/config" ]
               else
               [
-                "SSH_PRIVATE_KEY_PATH=/run/credentials/%N.service/ssh_key"
-                "REPO=${toString config.services.nxcd.repo}"
-                "BRANCH=${toString config.services.nxcd.branch}"
+                "GIT_SSH_PRIVATE_KEY_PATH=/run/credentials/%N.service/ssh_key"
+                "GIT_REPO=${toString config.services.nxcd.repo}"
+                "GIT_BRANCH=${toString config.services.nxcd.branch}"
                 "HOST=${toString config.services.nxcd.host}"
                 "POLL_DURATION=${toString config.services.nxcd.poll_duration}"
                 "MATRIX_ENABLED=${toString config.services.nxcd.matrix.enable}"

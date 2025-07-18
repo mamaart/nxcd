@@ -83,7 +83,7 @@ func Run(cfg Config) error {
 	}
 
 	if cfg.PrivateKeyPath == "" {
-		cfg.PrivateKeyPath = "/etc/ssh/ssh_host_ed25519_key"
+		return fmt.Errorf("missing privatekey path")
 	}
 	if cfg.Branch == "" {
 		cfg.Branch = "main"
