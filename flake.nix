@@ -29,6 +29,13 @@
           description = "the path of the config (yaml) file";
         };
 
+        private-key-raw = lib.mkOption {
+          type = lib.types.path;
+          default = /etc/ssh/ssh_host_ed25519_key;
+          description = "the path of the ssh private key used to access github";
+          example = /etc/ssh/ssh_host_ed25519_key;
+        };
+
         private-key-path = lib.mkOption {
           type = lib.types.path;
           default = /etc/ssh/ssh_host_ed25519_key;
@@ -104,9 +111,10 @@
             Restart = "always";
             Type = "simple";
             DynamicUser = "yes";
-            LoadCredential = [
-              "ssh_key:/etc/ssh/ssh_host_ed25519_key"
-            ] ++ lib.optional (config.services.nxcd.configFile != null) "config:${toString config.services.nxcd.configFile}";
+            LoadCredential = 
+              lib.optional (config.services.nxcd.private-key-raw != null) "ssh_key:${toString config.services.nxcd.private-key-raw}"
+              ++ 
+              lib.optional (config.services.nxcd.configFile != null) "config:${toString config.services.nxcd.configFile}";
             Environment = 
               if (config.services.nxcd.configFile != null) then 
                 [ "APP_CONFIG=/run/credentials/%N.service/config" ]
