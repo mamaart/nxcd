@@ -104,7 +104,7 @@
             Restart = "always";
             Type = "simple";
             DynamicUser = "yes";
-            LoadCredentials = [
+            LoadCredential = [
               "ssh_key:${toString config.services.nxcd.private-key-path}"
             ] ++ lib.optional (config.services.nxcd.configFile != null) "config:${toString config.services.nxcd.configFile}";
             Environment = 
