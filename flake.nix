@@ -96,7 +96,7 @@
 
       config = lib.mkIf config.services.nxcd.enable {
         systemd.services.nxcd = {
-          description = "Exposes nxcd dns control service";
+          description = "Exposes nxcd nix deployment service";
           wantedBy = ["multi-user.target"];
           after = ["network.target"];
           serviceConfig = {

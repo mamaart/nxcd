@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"sync/atomic"
@@ -35,7 +34,7 @@ type Config struct {
 func Client(privateKeyPath ...string) (*ssh.Client, error) {
 	auths, err := loadSSHAuthMethods(privateKeyPath...)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to load ssh auth methods")
 	}
 
 	client, err := ssh.Dial("tcp", "github.com:22", &ssh.ClientConfig{
@@ -49,20 +48,8 @@ func Client(privateKeyPath ...string) (*ssh.Client, error) {
 	return client, nil
 }
 
-func loadSSHAuthMethods(privateKeyPath ...string) ([]ssh.AuthMethod, error) {
-	var auths []ssh.AuthMethod
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, fmt.Errorf("could not find user home directory: %w", err)
-	}
-
-	keyFiles := []string{
-		filepath.Join(homeDir, ".ssh", "id_ed25519"),
-		"/etc/ssh/ssh_host_ed25519_key",
-	}
-
-	for _, keyPath := range append(keyFiles, privateKeyPath...) {
+func loadSSHAuthMethods(privateKeyPath ...string) (auths []ssh.AuthMethod, _ error) {
+	for _, keyPath := range privateKeyPath {
 		keyData, err := os.ReadFile(keyPath)
 		if err != nil {
 			continue
