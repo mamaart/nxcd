@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"bufio"
@@ -6,14 +6,17 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync/atomic"
 	"time"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
 const (
@@ -29,6 +32,65 @@ type Config struct {
 	Host           string
 	PollDuration   time.Duration
 	Notifier       func(string)
+}
+
+func Client(privateKeyPath ...string) (*ssh.Client, error) {
+	auths, err := loadSSHAuthMethods(privateKeyPath...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client, err := ssh.Dial("tcp", "github.com:22", &ssh.ClientConfig{
+		User:            "git",
+		Auth:            auths,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to dial github: %v", err)
+	}
+	return client, nil
+}
+
+func loadSSHAuthMethods(privateKeyPath ...string) ([]ssh.AuthMethod, error) {
+	var auths []ssh.AuthMethod
+
+	if sock := os.Getenv("SSH_AUTH_SOCK"); sock != "" {
+		conn, err := net.Dial("unix", sock)
+		if err == nil {
+			agentClient := agent.NewClient(conn)
+			auths = append(auths, ssh.PublicKeysCallback(agentClient.Signers))
+		}
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("could not find user home directory: %w", err)
+	}
+
+	keyFiles := []string{
+		filepath.Join(homeDir, ".ssh", "id_ed25519"),
+		"/etc/ssh/ssh_host_ed25519_key",
+	}
+
+	for _, keyPath := range append(keyFiles, privateKeyPath...) {
+		keyData, err := os.ReadFile(keyPath)
+		if err != nil {
+			continue
+		}
+
+		signer, err := ssh.ParsePrivateKey(keyData)
+		if err != nil {
+			continue
+		}
+
+		auths = append(auths, ssh.PublicKeys(signer))
+	}
+
+	if len(auths) == 0 {
+		return nil, fmt.Errorf("no usable SSH keys found (only ed25519 are used)")
+	}
+
+	return auths, nil
 }
 
 func Run(cfg Config) error {
@@ -50,24 +112,9 @@ func Run(cfg Config) error {
 	if cfg.PollDuration == time.Duration(0) {
 		cfg.PollDuration = time.Minute
 	}
-
-	key, err := os.ReadFile(cfg.PrivateKeyPath)
+	client, err := Client(cfg.PrivateKeyPath)
 	if err != nil {
-		return fmt.Errorf("failed to read file of privateKey: %v", err)
-	}
-
-	signer, err := ssh.ParsePrivateKey(key)
-	if err != nil {
-		return fmt.Errorf("failed to parse ssh privateKey: %v", err)
-	}
-
-	client, err := ssh.Dial("tcp", "github.com:22", &ssh.ClientConfig{
-		User:            "git",
-		Auth:            []ssh.AuthMethod{ssh.PublicKeys(signer)},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	})
-	if err != nil {
-		return fmt.Errorf("failed to dial github: %v", err)
+		return fmt.Errorf("failed to get ssh client: %v", err)
 	}
 
 	var state atomic.Uint32
@@ -120,14 +167,14 @@ func loop(client *ssh.Client, repo string, d time.Duration) <-chan string {
 	go func(ch chan<- string) {
 		defer close(ch)
 
-		old, err := getSha(client, repo)
+		old, err := GetSha(client, repo)
 		if err != nil {
 			log.Printf("failed to get sha: %v\n", err)
 			return
 		}
 
 		for range time.Tick(d) {
-			sha, err := getSha(client, repo)
+			sha, err := GetSha(client, repo)
 			if err != nil {
 				log.Printf("failed to get sha: %v\n", err)
 				return
@@ -142,7 +189,7 @@ func loop(client *ssh.Client, repo string, d time.Duration) <-chan string {
 	return ch
 }
 
-func getSha(client *ssh.Client, repo string) (string, error) {
+func GetSha(client *ssh.Client, repo string) (string, error) {
 	session, err := client.NewSession()
 	if err != nil {
 		return "", fmt.Errorf("could not get session: %v", err)

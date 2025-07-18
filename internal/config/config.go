@@ -13,7 +13,7 @@ type Config struct {
 	NixHost      string `yaml:"nix_host"`
 	Git          Git    `yaml:"git"`
 	Matrix       Matrix `yaml:"matrix"`
-	PollDuration string `yaml:"poll_duration"`
+	PollDuration int    `yaml:"poll_duration"`
 }
 
 type Matrix struct {
@@ -80,8 +80,8 @@ func (c Config) valid() (Config, error) {
 	if c.NixHost == "" {
 		return c, errors.New("missing nix machine hostname")
 	}
-	if c.PollDuration == "" {
-		c.PollDuration = "60"
+	if c.PollDuration == 0 {
+		c.PollDuration = 60
 	}
 	if c.Git.Branch == "" {
 		c.Git.Branch = "main"
