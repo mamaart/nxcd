@@ -2,10 +2,10 @@ package main
 
 import (
 	"log"
-	"strconv"
 	"time"
 
 	"github.com/mamaart/nxcd/internal/config"
+	"github.com/mamaart/nxcd/internal/core"
 	"github.com/mamaart/nxcd/notifier"
 )
 
@@ -14,16 +14,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("invalid config: %v", err)
 	}
-	cfg := Config{
+	cfg := core.Config{
 		PrivateKeyPath: config.Git.PrivateKeyPath,
 		Repo:           config.Git.Repo,
 		Branch:         config.Git.Branch,
 		Host:           config.NixHost,
-	}
-
-	d, err := strconv.Atoi(config.PollDuration)
-	if err == nil {
-		cfg.PollDuration = time.Second * time.Duration(d)
+		PollDuration:   time.Second * time.Duration(config.PollDuration),
+		Notifier:       func(s string) {},
 	}
 
 	if config.Matrix.Enabled {
@@ -37,9 +34,6 @@ func main() {
 			log.Fatal(err)
 		}
 		cfg.Notifier = n.Notify
-	} else {
-		cfg.Notifier = func(s string) {}
 	}
-
-	log.Fatal(Run(cfg))
+	log.Fatal(core.Run(cfg))
 }
