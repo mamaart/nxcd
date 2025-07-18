@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -31,16 +32,15 @@ type Git struct {
 
 func Load() (Config, error) {
 	configPath := os.Getenv("APP_CONFIG")
-	if configPath == "" {
-		return Config{}, fmt.Errorf("missing APP_CONFIG environment variable")
-	}
 	if configPath != "" {
+		log.Println("Loading config from file")
 		config, err := fromFile(configPath)
 		if err != nil {
 			return Config{}, fmt.Errorf("Failed to load configuration: %v", err)
 		}
 		return config.valid()
 	}
+	log.Println("Loading config from os environment variables")
 	config := Config{
 		Matrix: Matrix{
 			Enabled:    os.Getenv("MATRIX_ENABLED") == "true",
